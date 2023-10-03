@@ -9,99 +9,98 @@ Base = declarative_base()
 customer_restaurant = Table(
     'customer_restaurants',
     Base.metadata,
-    Column('restaurant_id',ForeignKey('restaurants.id'), primary_key=True),
-    Column('customer_id',ForeignKey('customers.id'), primary_key=True),
-    extend_existing=True
+    Column('restaurant_id',Integer,ForeignKey('restaurant.id')),
+    Column('customer_id',Integer,ForeignKey('customer.id')),
+    # extend_existing=True
 )
 
 class Restaurant(Base):
-    __tablename__ = "restaurants"
+    __tablename__ = "restaurant"
 
     id = Column(Integer,primary_key=True)
     name = Column(String())
     price = Column(Float())
 
-    reviews = relationship('Review',back_populates='restaurants')
-    customers = relationship('Customer',secondary=customer_restaurant,backref=backref('restaurants'))
+    reviews = relationship('Review',backref='restaurant')
+    customers = relationship('Customer',secondary=customer_restaurant,back_populates=('restaurants'))
 
-    # Object Relationship Methods
-    def customers(self):
-        #returns a collection of all the customers who reviewed the `Restaurant`
-        print([review.customer_id for review in self.reviews])
-        #return session.query(Restaurant).all()
-    
+    # # Object Relationship Methods
+    def review_customers(self):
+        return [review.customer for review in self.reviews]
+      
+    def review_restaurant(self):
+        return self.reviews
 
-    def reviews(self):
-        #returns a collection of all the reviews for the `Restaurant`
-        return [review for review in self.reviews]
-        #return session.query(Restaurant).all()
     @classmethod
     def fanciest(cls):
-        print(session.query(Restaurant).order_by(Restaurant.price.desc()).first())
-
-    def all_reviews(self):
-        pass
+        return session.query(cls).order_by(cls.price.desc()).first()
+    
+    @classmethod
+    def all_reviews(cls):
+        return cls.reviews
 class Review(Base):
-    __tablename__ = 'reviews'
+    __tablename__ = 'review'
 
     id = Column(Integer,primary_key=True)
     star_rating = Column(Integer())
-    customer_id = Column(Integer(), ForeignKey('customers.id'))
-    restaurant_id = Column(Integer(), ForeignKey('restaurants.id'))
+    customer_id = Column(Integer(), ForeignKey('customer.id'))
+    restaurant_id = Column(Integer(), ForeignKey('restaurant.id'))
 
-    #Object Relationship Methods
-    def customer(self):
+
+    # # #Object Relationship Methods
+    def review_customer(self):
         #should return the `Customer` instance for this review
         return self._customer
-    def restaurant(self):
+    def review_restaurant(self):
         #should return the `Restaurant` instance for this review
         return self._restaurant
     @classmethod
     def full_review(self):
         #not complete
-        return f'Review for {self.restaurant.name} by {self.customer.first_name} {self.customer.last_name}: {self.review.star_rating} stars.'
+        return f'Review for {self._restaurant.name} by {self.customer.full_name()}: {self.star_rating} stars'
     
 
 class Customer(Base):
-    __tablename__ = "customers"
+    __tablename__ = "customer"
 
     id = Column(Integer,primary_key=True)
     first_name = Column(String())
     last_name = Column(String())
 
     restaurants = relationship('Restaurant',secondary=customer_restaurant,back_populates=('customers'))
-    reviews = relationship('Review',backref=backref('customers'))
+    reviews = relationship('Review',backref=backref('customer'))
 
-    #Object Relationship Methods
-    def reviews(self):
+    # #Object Relationship Methods
+    def customerreviews(self):
         #should return a collection of all the reviews that the `Customer` has left
-        print(self._reviews)
+        print(self.reviews)
 
-    def restaurants(self):
+    def restaurantsreviews(self):
         # should return a collection of all the restaurants that the `Customer` has reviewed
-        return [review.customer for review in self.reviews]
+        return [review.restaurant for review in self.reviews]
 
-    #Aggregate and Relationship Methods
+    # #Aggregate and Relationship Methods
     def full_name(self):
         print(f'{self.first_name} {self.last_name}')
     
     def favorite_restaurant(self):
-        customer_reviews = [review.customer for review in self.reviews]
+        customer_reviews = [review.star_rating for review in self.reviews]
         #not complete
         return max(customer_reviews)
-
-    def add_review(self,restaurant, rating):
-        add_review = Review(customer = self, restaurant = restaurant, star_rating = rating)
-        session.add(add_review)
+    def add_review(self, restaurant, rating):
+        review = Review(restaurant_id=restaurant.id, star_rating=rating, customer_id=self.id)
+        session.add(review)
         session.commit()
+
     def delete_reviews(self,restaurant):
         pass
         #for loop maybe:
         #session.delete(review)
-        for review in self.reviews:
-            if review.restaurant_id == restaurant.id:
-                session.delete(review)
-            session.commit()
+        review = session.query(Review).filter_by(restaurant_id = restaurant.id)
+        for item_review in review:
+            session.delete(item_review)
+        session.commit()
+        
             
 if __name__ == "__main__":
     engine = create_engine('sqlite:///model.db')
@@ -120,15 +119,22 @@ if __name__ == "__main__":
     customer4 = Customer(first_name = "Cynthia",last_name="Oloo")
     customer5 = Customer(first_name = "Brian",last_name="Ng'eno")
 
-
-    # session.bulk_save_objects([restaurant1,restaurant2,restaurant3,restaurant4,customer1,customer2,customer3,customer4,customer5])
+    # session.add_all([customer1,customer2,customer3,customer4,customer5,restaurant1,restaurant2,restaurant3,restaurant4])
     # session.commit()
-    review1 = Review(customer=customer1,restaurant = restaurant1,star_rating=7)
-    # session.add(review1)
-    # session.commit()
+    review1 = Review(star_rating=4, restaurant=restaurant1, customer=customer1)
+    review2 = Review(star_rating=5, restaurant=restaurant2, customer=customer2)
+    review3 = Review(star_rating=3, restaurant=restaurant3, customer=customer3)
 
-    #customer1.add_review(restaurant1,9)
-    #customer2.add_review(restaurant4,8)
+    # session.add_all([review1,review2,review3])
+    # session.commit()
+    customer3.add_review(restaurant=restaurant3,rating = 0)
+    
+    
+    
+    
+
+
+    
     
     
     
