@@ -37,9 +37,10 @@ class Restaurant(Base):
         #return session.query(Restaurant).all()
     @classmethod
     def fanciest(cls):
-        return session.query(Restaurant).order_by(Restaurant.price.desc()).first()
-        
+        print(session.query(Restaurant).order_by(Restaurant.price.desc()).first())
 
+    def all_reviews(self):
+        pass
 class Review(Base):
     __tablename__ = 'reviews'
 
@@ -47,13 +48,11 @@ class Review(Base):
     star_rating = Column(Integer())
     customer_id = Column(Integer(), ForeignKey('customers.id'))
     restaurant_id = Column(Integer(), ForeignKey('restaurants.id'))
-    #customer = relationship('Customer',back_populates='reviews')
-    #restaurant = relationship('Restaurant',back_populates='reviews')
 
     #Object Relationship Methods
     def customer(self):
         #should return the `Customer` instance for this review
-        return session.query(Customer).filter_by(Customer.id == self.customer_id).first()
+        return self._customer
     def restaurant(self):
         #should return the `Restaurant` instance for this review
         return self._restaurant
@@ -71,15 +70,12 @@ class Customer(Base):
     last_name = Column(String())
 
     restaurants = relationship('Restaurant',secondary=customer_restaurant,back_populates=('customers'))
-
-    review = relationship('Review',backref=backref('customers'))
-
+    reviews = relationship('Review',backref=backref('customers'))
 
     #Object Relationship Methods
     def reviews(self):
         #should return a collection of all the reviews that the `Customer` has left
-
-        print(self.reviews)
+        print(self._reviews)
 
     def restaurants(self):
         # should return a collection of all the restaurants that the `Customer` has reviewed
@@ -103,7 +99,7 @@ class Customer(Base):
         #for loop maybe:
         #session.delete(review)
         for review in self.reviews:
-            if review.restaurant == restaurant:
+            if review.restaurant_id == restaurant.id:
                 session.delete(review)
             session.commit()
             
@@ -133,6 +129,10 @@ if __name__ == "__main__":
 
     #customer1.add_review(restaurant1,9)
     #customer2.add_review(restaurant4,8)
+    
+    
+    
+
     
     
 
