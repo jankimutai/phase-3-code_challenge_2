@@ -1,4 +1,4 @@
-# phase-3-code_challenge_2
+# phase-3-code_challenge_3
 This code challenge uses SQLAlchemy to create a database schema for a restaurant review application. It defines three classes: Restaurant, Customer, and Review.
 The Restaurant  has many `Review`s, a `Customer` has many `Review`s, and a `Review` belongs to a `Restaurant` and to a `Customer`. `Restaurant` - `Customer` is a many-to-many relationship.
 
